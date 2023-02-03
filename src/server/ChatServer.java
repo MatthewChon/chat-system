@@ -46,7 +46,7 @@ public class ChatServer implements Runnable {
         Date now = new Date();
         for (ConnectionHandler clientConnection: connections) {
             if (clientConnection != null) {
-                clientConnection.sendMessage(String.format("%s %s", textDateFormatter.format(now),
+                clientConnection.sendMessage(String.format("[ %s ] %s", textDateFormatter.format(now),
                                                                             message));
             }
         }

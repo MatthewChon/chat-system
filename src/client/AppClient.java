@@ -5,8 +5,8 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 public class AppClient implements Runnable {
-    private static String ipAddress;
-    private static int portnumber;
+    private String ipAddress;
+    private int portnumber;
 
     private Socket client;
     private BufferedReader in;

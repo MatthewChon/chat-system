@@ -1,24 +1,28 @@
 import java.awt.Dimension;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.border.Border;
 
 public class ChatGUI extends JFrame implements Runnable {
     private static final int MAXWIDTH = 1200, MAXHEIGHT = 800;
     private static final int MINWIDTH = 800, MINHEIGHT = 600;
-    private int chatLogColumnSize = 30;
-    private int inputColumnSize = 3;
+    private int chatLogRowSize = 30;
 
     AppClient clientSocket;
     private JPanel mainContent;
+    private JPanel chatComponent;
     private JTextArea groupChatLog;
     private JTextField userInput;
     private String windowName;
@@ -28,13 +32,21 @@ public class ChatGUI extends JFrame implements Runnable {
         windowName = JOptionPane.showInputDialog("Enter name for the chat");
         clientSocket = client;
         clientSocket.sendMessage(windowName);
+        chatComponent = createChatComponent();
+        addWindowListener(new ShutdownHandler());
+    }
+    private JPanel createChatComponent() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         groupChatLog = createChatLog();
         userInput = createUserTextField();
-        addWindowListener(new ShutdownHandler());
+        panel.add(groupChatLog);
+        panel.add(userInput);
+        return panel;
     }
     private JTextArea createChatLog() {
         JTextArea textField = new JTextArea();
-        textField.setColumns(chatLogColumnSize);
+        textField.setRows(chatLogRowSize);
         textField.setEditable(false);
         textField.getCaret().setVisible(false);
         textField.getCaret().setBlinkRate(0);
@@ -42,12 +54,11 @@ public class ChatGUI extends JFrame implements Runnable {
     }
     private JTextField createUserTextField() {
         JTextField inputField = new JTextField();
-        inputField.setColumns(inputColumnSize);
         inputField.addKeyListener(new InputController());
         return inputField;
     }
     public void updateLog(String message) {
-        groupChatLog.append(message);
+        groupChatLog.append(message + "\n");
     }
 
     @Override
@@ -59,8 +70,7 @@ public class ChatGUI extends JFrame implements Runnable {
     }
     private JPanel createPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.add(groupChatLog, BorderLayout.CENTER);
-        panel.add(userInput, BorderLayout.SOUTH);
+        panel.add(chatComponent, BorderLayout.CENTER);
         return panel;
     }
     private void configure() {
