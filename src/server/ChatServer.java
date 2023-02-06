@@ -11,6 +11,9 @@ import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
+
 public class ChatServer implements Runnable {
     private static int portnumber;
     private ServerSocket server;
@@ -18,19 +21,23 @@ public class ChatServer implements Runnable {
     private boolean done;
     private ExecutorService threadPool;
     private DateFormat textDateFormatter = new SimpleDateFormat("hh:mm:ss a zzz 'on' MM:dd:yyyy");
+    private String _KEYSTORE;
+    private String _STORE_PASS;
 
 
     private DateFormat dateFormat = new SimpleDateFormat("E yyyy.MM.dd 'at' hh:mm:ss a zzz");
 
-    public ChatServer(int port) {
+    public ChatServer(String certPath, String pass, int port) {
         portnumber = port;
         connections = new ArrayList<>();
         done = false;
+        _KEYSTORE = certPath;
+        _STORE_PASS = pass;
     }
     @Override
     public void run() {
         try {
-            server = new ServerSocket(portnumber);
+            server = setupSSLServerSocket();
             threadPool = Executors.newCachedThreadPool();
             while (!done) {
                 Socket client = server.accept();
@@ -41,6 +48,15 @@ public class ChatServer implements Runnable {
         } catch (IOException e) {
             shutdown();
         }
+    }
+    private SSLServerSocket setupSSLServerSocket() throws IOException {
+        System.setProperty("javax.net.ssl.keyStore", _KEYSTORE);
+        System.setProperty("javax.net.ssl.keyStorePassword", _STORE_PASS);
+
+        SSLServerSocketFactory socketFactory = (SSLServerSocketFactory)SSLServerSocketFactory.getDefault();
+        SSLServerSocket server = (SSLServerSocket)socketFactory.createServerSocket(portnumber);
+
+        return server;
     }
     protected void broadcast(String message) {
         Date now = new Date();
@@ -132,11 +148,21 @@ public class ChatServer implements Runnable {
         }
     }
     public static void main(String[] args) {
-        if (args.length < 1) {
-            System.err.println("Please specify a port number");
+        if (args.length < 4) {
+            System.err.print("Insufficient argument: Missing");
+            if (args.length < 1) {
+                System.err.print(" [Certificate Path]");
+            }
+            if (args.length < 2) {
+                System.err.print(" [Certificate Password]");
+            }
+            if (args.length < 3) {
+                System.err.print(" [Port Number]");
+            }
+            System.err.println();
             return;
         }
-        ChatServer server = new ChatServer(Integer.parseInt(args[0]));
+        ChatServer server = new ChatServer(args[0], args[1], Integer.parseInt(args[2]));
         server.run();
     }
 }
