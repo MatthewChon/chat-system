@@ -13,6 +13,7 @@ import java.util.concurrent.Executors;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocket;
 
 public class ChatServer implements Runnable {
     private static int portnumber;
@@ -40,7 +41,7 @@ public class ChatServer implements Runnable {
             server = setupSSLServerSocket();
             threadPool = Executors.newCachedThreadPool();
             while (!done) {
-                Socket client = server.accept();
+                SSLSocket client = (SSLSocket)server.accept();
                 ConnectionHandler handler = new ConnectionHandler(client);
                 connections.add(handler);
                 threadPool.execute(handler);
