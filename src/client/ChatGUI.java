@@ -1,84 +1,54 @@
-import java.awt.Dimension;
 import java.awt.BorderLayout;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 
 import javax.swing.BoxLayout;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-public class ChatGUI extends JFrame implements Runnable {
-    private static final int MAXWIDTH = 1200, MAXHEIGHT = 800;
-    private static final int MINWIDTH = 800, MINHEIGHT = 600;
+public class ChatGUI extends JPanel implements Runnable {
     private int chatLogRowSize = 30;
 
-    AppClient clientSocket;
-    private JPanel mainContent;
-    private JPanel chatComponent;
-    private JTextArea groupChatLog;
-    private JTextField userInput;
-    private String windowName;
+    AppClient client_socket;
+    private JPanel chat_component;
+    private JTextArea groupchat_log;
+    private JTextField user_input;
 
     public ChatGUI(AppClient client) {
-        super("Chatterbox");
-        windowName = JOptionPane.showInputDialog("Enter name for the chat");
-        clientSocket = client;
-        clientSocket.sendMessage(windowName);
-        chatComponent = createChatComponent();
-        addWindowListener(new ShutdownHandler());
+        super(new BorderLayout());
+        client_socket = client;
+        chat_component = createChatComponent();
     }
     private JPanel createChatComponent() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        groupChatLog = createChatLog();
-        userInput = createUserTextField();
-        panel.add(groupChatLog);
-        panel.add(userInput);
+        groupchat_log = createChatLog();
+        user_input = createUserTextField();
+        panel.add(groupchat_log);
+        panel.add(user_input);
         return panel;
     }
     private JTextArea createChatLog() {
-        JTextArea textField = new JTextArea();
-        textField.setRows(chatLogRowSize);
-        textField.setEditable(false);
-        textField.getCaret().setVisible(false);
-        textField.getCaret().setBlinkRate(0);
-        return textField;
+        JTextArea text_field = new JTextArea();
+        text_field.setRows(chatLogRowSize);
+        text_field.setEditable(false);
+        text_field.getCaret().setVisible(false);
+        text_field.getCaret().setBlinkRate(0);
+        return text_field;
     }
     private JTextField createUserTextField() {
-        JTextField inputField = new JTextField();
-        inputField.addKeyListener(new InputController());
-        return inputField;
+        JTextField input_field = new JTextField();
+        input_field.addKeyListener(new InputController());
+        return input_field;
     }
     public void updateLog(String message) {
-        groupChatLog.append(message + "\n");
+        groupchat_log.append(message + "\n");
     }
 
     @Override
     public void run() {
-        mainContent = createPanel();
-        add(mainContent);
-        configure();
-        deploy();
-    }
-    private JPanel createPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.add(chatComponent, BorderLayout.CENTER);
-        return panel;
-    }
-    private void configure() {
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setMaximumSize(new Dimension(MAXWIDTH, MAXHEIGHT));
-        setMinimumSize(new Dimension(MINWIDTH, MINHEIGHT));
-    }
-    private void deploy() {
-        pack();
-        setLocationRelativeTo(null);
-        setVisible(true);
+        add(chat_component, BorderLayout.CENTER);
     }
     class InputController implements KeyListener {
         public InputController() {
@@ -96,57 +66,19 @@ public class ChatGUI extends JFrame implements Runnable {
         @Override
         public void keyReleased(KeyEvent e) {
             if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                String message = userInput.getText();
+                String message = user_input.getText();
                 if (message.startsWith("/nick ")) {
                     String[] messageSplit = message.split(" ", 2);
                     if (messageSplit.length == 2) {
-                        windowName = messageSplit[1];
+                        client_socket.setName(messageSplit[1]);
                     }
                 } else if (message.equals("/quit")) {
-                    dispose();
-                    clientSocket.shutdown();
+                    client_socket.shutdown();
                     System.exit(0);
                 }
-                clientSocket.sendMessage(message);
-                userInput.setText("");
+                client_socket.sendMessage(message);
+                user_input.setText("");
             }
         }
-    }
-    class ShutdownHandler implements WindowListener {
-        @Override
-        public void windowOpened(WindowEvent e) {  
-            // ignore          
-        }
-
-        @Override
-        public void windowClosing(WindowEvent e) {
-            clientSocket.shutdown();
-        }
-
-        @Override
-        public void windowClosed(WindowEvent e) {
-            // ignore    
-        }
-
-        @Override
-        public void windowIconified(WindowEvent e) {   
-            // ignore         
-        }
-
-        @Override
-        public void windowDeiconified(WindowEvent e) {     
-            // ignore       
-        }
-
-        @Override
-        public void windowActivated(WindowEvent e) {     
-            // ignore       
-        }
-
-        @Override
-        public void windowDeactivated(WindowEvent e) {        
-            // ignore    
-        }
-
     }
 }

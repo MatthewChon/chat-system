@@ -16,20 +16,20 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
 public class ChatServer implements Runnable {
-    private static int portnumber;
+    private static int port_number;
     private ServerSocket server;
     private ArrayList<ConnectionHandler> connections;
     private boolean done;
-    private ExecutorService threadPool;
-    private DateFormat textDateFormatter = new SimpleDateFormat("hh:mm:ss a zzz 'on' MM:dd:yyyy");
+    private ExecutorService thread_pool;
+    private DateFormat textdate_formatter = new SimpleDateFormat("hh:mm:ss a zzz 'on' MM:dd:yyyy");
     private String _KEYSTORE;
     private String _STORE_PASS;
 
 
-    private DateFormat dateFormat = new SimpleDateFormat("E yyyy.MM.dd 'at' hh:mm:ss a zzz");
+    private DateFormat date_format = new SimpleDateFormat("E yyyy.MM.dd 'at' hh:mm:ss a zzz");
 
     public ChatServer(String certPath, String pass, int port) {
-        portnumber = port;
+        port_number = port;
         connections = new ArrayList<>();
         done = false;
         _KEYSTORE = certPath;
@@ -39,12 +39,12 @@ public class ChatServer implements Runnable {
     public void run() {
         try {
             server = setupSSLServerSocket();
-            threadPool = Executors.newCachedThreadPool();
+            thread_pool = Executors.newCachedThreadPool();
             while (!done) {
                 SSLSocket client = (SSLSocket)server.accept();
                 ConnectionHandler handler = new ConnectionHandler(client);
                 connections.add(handler);
-                threadPool.execute(handler);
+                thread_pool.execute(handler);
             }
         } catch (IOException e) {
             shutdown();
@@ -55,7 +55,7 @@ public class ChatServer implements Runnable {
         System.setProperty("javax.net.ssl.keyStorePassword", _STORE_PASS);
 
         SSLServerSocketFactory socketFactory = (SSLServerSocketFactory)SSLServerSocketFactory.getDefault();
-        SSLServerSocket server = (SSLServerSocket)socketFactory.createServerSocket(portnumber);
+        SSLServerSocket server = (SSLServerSocket)socketFactory.createServerSocket(port_number);
 
         return server;
     }
@@ -63,14 +63,14 @@ public class ChatServer implements Runnable {
         Date now = new Date();
         for (ConnectionHandler clientConnection: connections) {
             if (clientConnection != null) {
-                clientConnection.sendMessage(String.format("[ %s ] %s", textDateFormatter.format(now),
+                clientConnection.sendMessage(String.format("[ %s ] %s", textdate_formatter.format(now),
                                                                             message));
             }
         }
     }
     protected void systemBroadcast(String message) {
         Date now = new Date();
-        System.out.println(String.format("%s : %s", dateFormat.format(now), message));
+        System.out.println(String.format("%s : %s", date_format.format(now), message));
         for (ConnectionHandler clientConnection: connections) {
             if (clientConnection != null) {
                 clientConnection.sendMessage(String.format("[System] %s",message));
@@ -80,7 +80,7 @@ public class ChatServer implements Runnable {
     public void shutdown() {
         try {
             done = true;
-            threadPool.shutdown();
+            thread_pool.shutdown();
             if (!server.isClosed()) {
                 server.close();
             }
@@ -95,7 +95,7 @@ public class ChatServer implements Runnable {
         private Socket client;
         private BufferedReader in;
         private PrintWriter out;
-        private String clientName;
+        private String client_name;
 
         public ConnectionHandler(Socket client) {
             this.client = client;
@@ -105,25 +105,25 @@ public class ChatServer implements Runnable {
             try {
                 out = new PrintWriter(client.getOutputStream(), true);
                 in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-                clientName = in.readLine();
-                systemBroadcast(String.format("%s joined the chat!", clientName));
+                client_name = in.readLine();
+                systemBroadcast(String.format("%s joined the chat!", client_name));
 
                 String message;
                 while ((message = in.readLine()) != null) {
                     if (message.startsWith("/nick ")) {
                         String[] messageSplit = message.split(" ", 2);
                         if (messageSplit.length == 2) {
-                            systemBroadcast(String.format("%s renamed to %s", clientName, messageSplit[1]));
-                            clientName = messageSplit[1];
-                            out.println(String.format("[System] Successfully change to %s!", clientName));
+                            systemBroadcast(String.format("%s renamed to %s", client_name, messageSplit[1]));
+                            client_name = messageSplit[1];
+                            out.println(String.format("[System] Successfully change to %s!", client_name));
                         } else {
                             out.println("No nickname provided!");
                         }
                     } else if (message.equals("/quit")) {
-                        systemBroadcast(String.format("%s left the chat!", clientName));
+                        systemBroadcast(String.format("%s left the chat!", client_name));
                         shutdown();
                     } else {
-                        broadcast(String.format("%s : %s", clientName, message));
+                        broadcast(String.format("%s : %s", client_name, message));
                     }
                 }
             } catch (Exception e) {
@@ -131,7 +131,7 @@ public class ChatServer implements Runnable {
             }
         }
         public String getName() {
-            return clientName;
+            return client_name;
         }
         public void sendMessage(String message) {
             out.println(message);
@@ -149,7 +149,7 @@ public class ChatServer implements Runnable {
         }
     }
     public static void main(String[] args) {
-        if (args.length < 4) {
+        if (args.length < 3) {
             System.err.print("Insufficient argument: Missing");
             if (args.length < 1) {
                 System.err.print(" [Certificate Path]");
